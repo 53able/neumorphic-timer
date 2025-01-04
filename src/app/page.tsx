@@ -1,101 +1,107 @@
-import Image from "next/image";
+// src/app/page.tsx
 
-export default function Home() {
+'use client';
+
+import { useState, useEffect } from 'react';
+import VerticalSlider from '@/components/VerticalSlider';
+
+const Home = () => {
+  const [timer, setTimer] = useState(10); // 初期値10分
+  const [remainingTime, setRemainingTime] = useState(timer * 60); // 秒単位
+  const [isRunning, setIsRunning] = useState(false);
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [endTime, setEndTime] = useState<Date | null>(null);
+
+  // 通知の許可をアプリ起動時にリクエスト（削除）
+  // useEffect(() => {
+  //   if (Notification.permission === 'default') {
+  //     Notification.requestPermission().then((permission) => {
+  //       if (permission === 'granted') {
+  //         console.log('通知の許可が得られました。');
+  //       } else {
+  //         console.log('通知の許可が拒否されました。');
+  //       }
+  //     });
+  //   }
+  // }, []);
+
+  // スライダーが変更されたときにタイマーをリセット・開始
+  useEffect(() => {
+    setRemainingTime(timer * 60);
+    if (timer > 0) {
+      setIsRunning(true);
+      const now = new Date();
+      setStartTime(now);
+      setEndTime(new Date(now.getTime() + timer * 60 * 1000));
+    } else {
+      setIsRunning(false);
+      setStartTime(null);
+      setEndTime(null);
+    }
+  }, [timer]);
+
+  // タイマーのカウントダウンロジック
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (isRunning && remainingTime > 0) {
+      interval = setInterval(() => {
+        setRemainingTime((prev) => prev - 1);
+      }, 1000);
+    } else if (remainingTime === 0 && isRunning) {
+      setIsRunning(false);
+      // タイマー終了時の処理（通知や音再生などをオミット）
+      // handleTimerEnd();
+    }
+
+    return () => clearInterval(interval);
+  }, [isRunning, remainingTime]);
+
+  // フォーマット関数
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-8 flex items-center justify-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 p-12 rounded-2xl bg-gray-50 dark:bg-gray-800 shadow-neumorph dark:shadow-neumorph-dark">
+        {/* 左側：タイマー情報 */}
+        <div className="flex flex-col items-center justify-center p-8 rounded-xl bg-gray-100 dark:bg-gray-700 shadow-neumorph-inset dark:shadow-neumorph-inset-dark">
+          <div className="text-3xl font-medium text-gray-800 dark:text-gray-100 mb-6">
+            <span className="block text-lg mb-2 text-gray-600 dark:text-gray-300">
+              {isRunning ? '残り時間' : '設定時間'}
+            </span>
+            {formatTime(remainingTime)}
+          </div>
+          
+          {startTime && endTime && (
+            <div className="space-y-2 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-neumorph-subtle dark:shadow-neumorph-subtle-dark">
+              <p>開始時刻: {startTime.toLocaleTimeString()}</p>
+              <p>終了予定: {endTime.toLocaleTimeString()}</p>
+            </div>
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+    
+        {/* 右側：縦向きスライダー */}
+        <div className="flex justify-center items-center p-8 rounded-xl bg-gray-100 dark:bg-gray-700 shadow-neumorph-inset dark:shadow-neumorph-inset-dark">
+          <VerticalSlider
+            value={timer}
+            min={1}
+            max={120}
+            onChange={(value) => {
+              setTimer(value);
+              setIsRunning(true);
+              const now = new Date();
+              setStartTime(now);
+              setEndTime(new Date(now.getTime() + value * 60 * 1000));
+            }}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default Home;
